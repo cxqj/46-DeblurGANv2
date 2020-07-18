@@ -20,7 +20,7 @@ def subsample(data: Iterable, bounds: Tuple[float, float], hash_fn: Callable, n_
     data = list(data)
     buckets = split_into_buckets(data, n_buckets=n_buckets, salt=salt, hash_fn=hash_fn)
 
-    lower_bound, upper_bound = [x * n_buckets for x in bounds]
+    lower_bound, upper_bound = [x * n_buckets for x in bounds]   # 0， 90.0
     msg = f'Subsampling buckets from {lower_bound} to {upper_bound}, total buckets number is {n_buckets}'
     if salt:
         msg += f'; salt is {salt}'
@@ -83,6 +83,7 @@ class PairedDataset(Dataset):
         jobs = tqdm(jobs, desc='preloading images', disable=not self.verbose)
         return Parallel(n_jobs=cpu_count(), backend='threading')(jobs)
 
+    # 静态方法可以实现实例化使用 C().f()，当然也可以不实例化调用该方法 C.f()
     @staticmethod
     def _preload(x: str, preload_size: int):
         img = _read_img(x)
@@ -117,7 +118,9 @@ class PairedDataset(Dataset):
     @staticmethod
     def from_config(config):
         config = deepcopy(config)
+        # files_a应该是文件夹的路径
         files_a, files_b = map(lambda x: sorted(glob(config[x], recursive=True)), ('files_a', 'files_b'))
+        # 数据增强
         transform_fn = aug.get_transforms(size=config['size'], scope=config['scope'], crop=config['crop'])
         normalize_fn = aug.get_normalize()
         corrupt_fn = aug.get_corrupt_function(config['corrupt'])
