@@ -40,7 +40,8 @@ class PerceptualLoss():
 
     def initialize(self, loss):
         with torch.no_grad():
-            self.criterion = loss
+            self.criterion = loss # MSELoss
+            # 这里构建一个VGG19？？
             self.contentFunc = self.contentFunc()
             self.transform = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
@@ -274,9 +275,25 @@ class DiscLossWGANGP(DiscLossLS):
         gradient_penalty = self.calc_gradient_penalty(net, realB.data, fakeB.data)
         return self.loss_D + gradient_penalty
 
-
+"""
+model:
+  {g_name: fpn_inception
+   blocks: 9
+   d_name: double_gan # may be no_gan, patch_gan, double_gan, multi_scale
+   d_layers: 3
+   content_loss: perceptual
+   adv_lambda: 0.001
+   disc_loss: wgan-gp
+   learn_residual: True
+   norm_layer: instance
+   dropout: True}
+"""
 def get_loss(model):
-    if model['content_loss'] == 'perceptual':
+    """
+    proposed to use the perceptual distance [15], as a form of
+    “content” loss LX
+    """
+    if model['content_loss'] == 'perceptual':  # 论文使用感知损失
         content_loss = PerceptualLoss()
         content_loss.initialize(nn.MSELoss())
     elif model['content_loss'] == 'l1':
@@ -285,7 +302,7 @@ def get_loss(model):
     else:
         raise ValueError("ContentLoss [%s] not recognized." % model['content_loss'])
 
-    if model['disc_loss'] == 'wgan-gp':
+    if model['disc_loss'] == 'wgan-gp':   # WGAN-GP discriminator in DeblurGAN
         disc_loss = DiscLossWGANGP()
     elif model['disc_loss'] == 'lsgan':
         disc_loss = DiscLossLS()
@@ -293,7 +310,7 @@ def get_loss(model):
         disc_loss = DiscLoss()
     elif model['disc_loss'] == 'ragan':
         disc_loss = RelativisticDiscLoss()
-    elif model['disc_loss'] == 'ragan-ls':
+    elif model['disc_loss'] == 'ragan-ls':   # 论文种提出的新的GAN损失函数
         disc_loss = RelativisticDiscLossLS()
     else:
         raise ValueError("GAN Loss [%s] not recognized." % model['disc_loss'])
