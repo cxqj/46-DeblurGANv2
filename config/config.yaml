@@ -3,7 +3,7 @@ project: deblur_gan
 experiment_desc: fpn
 
 train:
-  files_a: &FILES_A /datasets/my_dataset/**/*.jpg
+  files_a: &FILES_A /datasets/my_dataset/**/*.jpg      #& 用来建立锚点（defaults），<< 表示合并到当前数据，* 用来引用锚点。
   files_b: *FILES_A
   size: &SIZE 256
   crop: random
@@ -12,7 +12,7 @@ train:
   bounds: [0, .9]
   scope: geometric
   corrupt: &CORRUPT
-    - name: cutout
+    - name: cutout            # 这种是字典格式
       prob: 0.5
       num_holes: 3
       max_h_size: 25
