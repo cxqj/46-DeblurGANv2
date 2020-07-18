@@ -30,13 +30,13 @@ class ConvBlock(nn.Module):
 
 
 class FPNInception(nn.Module):
-
+    
     def __init__(self, norm_layer, output_ch=3, num_filters=128, num_filters_fpn=256):
         super().__init__()
 
         # Feature Pyramid Network (FPN) with four feature maps of resolutions
         # 1/4, 1/8, 1/16, 1/32 and `num_filters` filters for all feature maps.
-        self.fpn = FPN(num_filters=num_filters_fpn, norm_layer=norm_layer)
+        self.fpn = FPN(num_filters=num_filters_fpn, norm_layer=norm_layer)   # num_filters_fpn=256
 
         # The segmentation heads on top of the FPN
 
