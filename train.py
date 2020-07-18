@@ -1,4 +1,8 @@
 import logging
+
+# 函数在执行时，要带上所有必要的参数进行调用。但是，有时参数可以在函数被调用之前提前获知。
+#这种情况下，一个函数有一个或多个参数预先就能用上，以便函数能用更少的参数进行调用。
+#偏函数是将所要承载的函数作为partial()函数的第一个参数，原函数的各个参数依次作为partial()函数后续的参数，除非使用关键字参数。
 from functools import partial
 
 import cv2
@@ -9,13 +13,13 @@ import yaml
 from joblib import cpu_count
 from torch.utils.data import DataLoader
 
-from adversarial_trainer import GANFactory
+from adversarial_trainer import GANFactory  # 生成GAN模型的
 from dataset import PairedDataset
-from metric_counter import MetricCounter
-from models.losses import get_loss
-from models.models import get_model
-from models.networks import get_nets
-from schedulers import LinearDecay, WarmRestart
+from metric_counter import MetricCounter    
+from models.losses import get_loss    # 损失函数
+from models.models import get_model   # 像是构建网络输入数据的？？
+from models.networks import get_nets  # 构建生成器和判别器
+from schedulers import LinearDecay, WarmRestart   
 
 cv2.setNumThreads(0)
 
@@ -25,9 +29,9 @@ class Trainer:
         self.config = config
         self.train_dataset = train
         self.val_dataset = val
-        self.adv_lambda = config['model']['adv_lambda']
-        self.metric_counter = MetricCounter(config['experiment_desc'])
-        self.warmup_epochs = config['warmup_num']
+        self.adv_lambda = config['model']['adv_lambda']   # 0.001
+        self.metric_counter = MetricCounter(config['experiment_desc'])   # fpn
+        self.warmup_epochs = config['warmup_num']  # 3 预热3个epoch
 
     def train(self):
         self._init_params()
@@ -172,10 +176,14 @@ if __name__ == '__main__':
         config = yaml.load(f)
 
     batch_size = config.pop('batch_size')  # 1
+    # 这里使用了python的偏函数，第一个参数是函数名，后续的参数是函数可以提前获知的参数
     get_dataloader = partial(DataLoader, batch_size=batch_size, num_workers=cpu_count(), shuffle=True, drop_last=True)
 
-    datasets = map(config.pop, ('train', 'val'))  # map(function, iterable, ...)
+    #获取训练，验证的配置信息
+    datasets = map(config.pop, ('train', 'val'))  # map(function, iterable, ...)，
+    # 初始化一个dataset对象，因为使用了静态方法
     datasets = map(PairedDataset.from_config, datasets)
+    # 获得数据加载器
     train, val = map(get_dataloader, datasets)
     trainer = Trainer(config, train=train, val=val)
     trainer.train()
