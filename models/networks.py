@@ -18,7 +18,7 @@ def get_norm_layer(norm_type='instance'):
     if norm_type == 'batch':
         norm_layer = functools.partial(nn.BatchNorm2d, affine=True)
     elif norm_type == 'instance':
-        norm_layer = functools.partial(nn.InstanceNorm2d, affine=False, track_running_stats=True)
+        norm_layer = functools.partial(nn.InstanceNorm2d, affine=False, track_running_stats=True)   # norm_type = instance
     else:
         raise NotImplementedError('normalization layer [%s] is not found' % norm_type)
     return norm_layer
@@ -269,7 +269,7 @@ def get_fullD(model_config):
 
 
 def get_generator(model_config):
-    generator_name = model_config['g_name']
+    generator_name = model_config['g_name']   # fpn_inception
     if generator_name == 'resnet':
         model_g = ResnetGenerator(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
                                   use_dropout=model_config['dropout'],
@@ -278,7 +278,7 @@ def get_generator(model_config):
     elif generator_name == 'fpn_mobilenet':
         model_g = FPNMobileNet(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']))
     elif generator_name == 'fpn_inception':
-        model_g = FPNInception(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']))
+        model_g = FPNInception(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']))  # norm_type = instance
     elif generator_name == 'fpn_inception_simple':
         model_g = FPNInceptionSimple(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']))
     elif generator_name == 'fpn_dense':
@@ -318,6 +318,20 @@ def get_discriminator(model_config):
 
     return model_d
 
+# 构建生成器和判别器
+"""
+model_config:
+      g_name: fpn_inception
+      blocks: 9
+      d_name: double_gan # may be no_gan, patch_gan, double_gan, multi_scale
+      d_layers: 3
+      content_loss: perceptual
+      adv_lambda: 0.001
+      disc_loss: wgan-gp
+      learn_residual: True
+      norm_layer: instance
+      dropout: True
+"""
 
 def get_nets(model_config):
     return get_generator(model_config), get_discriminator(model_config)
