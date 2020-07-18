@@ -17,7 +17,7 @@ import aug
 
 
 def subsample(data: Iterable, bounds: Tuple[float, float], hash_fn: Callable, n_buckets=100, salt='', verbose=True):
-    data = list(data)
+    data = list(data)  # 300x2(一对图片)
     buckets = split_into_buckets(data, n_buckets=n_buckets, salt=salt, hash_fn=hash_fn)
 
     lower_bound, upper_bound = [x * n_buckets for x in bounds]   # 0， 90.0
@@ -30,7 +30,7 @@ def subsample(data: Iterable, bounds: Tuple[float, float], hash_fn: Callable, n_
 
 
 def hash_from_paths(x: Tuple[str, str], salt: str = '') -> str:
-    path_a, path_b = x
+    path_a, path_b = x   # 图片的路径
     names = ''.join(map(os.path.basename, (path_a, path_b)))
     return sha1(f'{names}_{salt}'.encode()).hexdigest()
 
@@ -61,10 +61,10 @@ class PairedDataset(Dataset):
 
         assert len(files_a) == len(files_b)
 
-        self.preload = preload
+        self.preload = preload  # False
         self.data_a = files_a
         self.data_b = files_b
-        self.verbose = verbose
+        self.verbose = verbose  # True
         self.corrupt_fn = corrupt_fn
         self.transform_fn = transform_fn
         self.normalize_fn = normalize_fn
@@ -128,12 +128,15 @@ class PairedDataset(Dataset):
         hash_fn = hash_from_paths
         # ToDo: add more hash functions
         verbose = config.get('verbose', True)
+        # 采样一部分图片
         data = subsample(data=zip(files_a, files_b),
                          bounds=config.get('bounds', (0, 1)),
                          hash_fn=hash_fn,
-                         verbose=verbose)
+                         verbose=verbose)  # (42,2) ndarray类型， 里面保存的是成对图片的路径
 
-        files_a, files_b = map(list, zip(*data))
+        # files_a : ['/media/../blur/000061.png',.....'/media/.../blur_gamma/000061.png',.....'/media/.../sharp/000061.png']
+        # files_b : ['/media/../blur/000061.png',.....'/media/.../blur_gamma/000061.png',.....'/media/.../sharp/000061.png']
+        files_a, files_b = map(list, zip(*data))  # 保存采样后图片对应的路径
 
         return PairedDataset(files_a=files_a,
                              files_b=files_b,
