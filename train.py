@@ -30,12 +30,12 @@ class Trainer:
         self.train_dataset = train
         self.val_dataset = val
         self.adv_lambda = config['model']['adv_lambda']   # 0.001
-        self.metric_counter = MetricCounter(config['experiment_desc'])   # fpn
-        self.warmup_epochs = config['warmup_num']  # 3 预热3个epoch
+        self.metric_counter = MetricCounter(config['experiment_desc'])   # fpn   记录实验过程的loss等信息
+        self.warmup_epochs = config['warmup_num']  # 3 
 
     def train(self):
-        self._init_params()
-        for epoch in range(0, config['num_epochs']):
+        self._init_params()  # 初始化网络等训练必要的东西
+        for epoch in range(0, config['num_epochs']):  # 200
             if (epoch == self.warmup_epochs) and not (self.warmup_epochs == 0):
                 self.netG.module.unfreeze()
                 self.optimizer_G = self._get_optim(self.netG.parameters())
@@ -155,10 +155,11 @@ class Trainer:
         elif d_name == 'patch_gan' or d_name == 'multi_scale':
             return GANFactory.create_model('SingleGAN', net_d, criterion_d)
         elif d_name == 'double_gan':
-            return GANFactory.create_model('DoubleGAN', net_d, criterion_d)
+            return GANFactory.create_model('DoubleGAN', net_d, criterion_d)  
         else:
             raise ValueError("Discriminator Network [%s] not recognized." % d_name)
 
+    # 构建损失函数，网络，优化器，调度器
     def _init_params(self):
         self.criterionG, criterionD = get_loss(self.config['model'])
         self.netG, netD = get_nets(self.config['model'])
@@ -184,6 +185,6 @@ if __name__ == '__main__':
     # 初始化一个dataset对象，因为使用了静态方法
     datasets = map(PairedDataset.from_config, datasets)
     # 获得数据加载器
-    train, val = map(get_dataloader, datasets)
+    train, val = map(get_dataloader, datasets)   # 这一步调用了dataset里的from_config方法
     trainer = Trainer(config, train=train, val=val)
     trainer.train()
