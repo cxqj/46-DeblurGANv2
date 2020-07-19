@@ -252,7 +252,7 @@ class DiscLossLS(DiscLoss):
         return DiscLoss.get_loss(self, net, fakeB, realB)
 
 
-class DiscLossWGANGP(DiscLossLS):
+class DiscLossWGANGP(DiscLossLS):   # global patch
     def name(self):
         return 'DiscLossWGAN-GP'
 
