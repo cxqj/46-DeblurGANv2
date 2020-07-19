@@ -16,22 +16,22 @@ from tqdm import tqdm
 import aug
 
 
-def subsample(data: Iterable, bounds: Tuple[float, float], hash_fn: Callable, n_buckets=100, salt='', verbose=True):
-    data = list(data)  # 300x2(一对图片)
-    buckets = split_into_buckets(data, n_buckets=n_buckets, salt=salt, hash_fn=hash_fn)  # 相当于为每个样本生成一个编号
+def subsample(data: Iterable, bounds: Tuple[float, float], hash_fn: Callable, n_buckets=100, salt='', verbose=True):  # bounds:(0,0.9)
+    data = list(data)  # [(path_a,path_b),(path_a,path_b),....(path_a,path_b)]  300x2
+    buckets = split_into_buckets(data, n_buckets=n_buckets, salt=salt, hash_fn=hash_fn)  # (300,)  [46,61,30,35,....,25,96]??
 
-    lower_bound, upper_bound = [x * n_buckets for x in bounds]   # 0， 90.0
+    lower_bound, upper_bound = [x * n_buckets for x in bounds]  # 0, 90.0
     msg = f'Subsampling buckets from {lower_bound} to {upper_bound}, total buckets number is {n_buckets}'
     if salt:
         msg += f'; salt is {salt}'
     if verbose:
         logger.info(msg)
-    return np.array([sample for bucket, sample in zip(buckets, data) if lower_bound <= bucket < upper_bound])  # 采样编号位于0-90的样本
+    return np.array([sample for bucket, sample in zip(buckets, data) if lower_bound <= bucket < upper_bound])  # samples between 0-90
 
 
 def hash_from_paths(x: Tuple[str, str], salt: str = '') -> str:
-    path_a, path_b = x   # 图片的路径
-    names = ''.join(map(os.path.basename, (path_a, path_b)))
+    path_a, path_b = x
+    names = ''.join(map(os.path.basename, (path_a, path_b)))  # 000047.png000047.png
     return sha1(f'{names}_{salt}'.encode()).hexdigest()
 
 
@@ -41,7 +41,7 @@ def split_into_buckets(data: Iterable, n_buckets: int, hash_fn: Callable, salt='
 
 
 def _read_img(x: str):
-    img = cv2.imread(x)
+    img = cv2.imread(x)   # (720,1280,3)
     if img is None:
         logger.warning(f'Can not read image {x} with OpenCV, switching to scikit-image')
         img = imread(x)
@@ -61,10 +61,10 @@ class PairedDataset(Dataset):
 
         assert len(files_a) == len(files_b)
 
-        self.preload = preload  # False
-        self.data_a = files_a
-        self.data_b = files_b
-        self.verbose = verbose  # True
+        self.preload = preload   # False
+        self.data_a = files_a   # list (258,)  ['/media/../000047.png',...]
+        self.data_b = files_b   # list (258,)  ['/media/../000047.png',...]
+        self.verbose = verbose   # True
         self.corrupt_fn = corrupt_fn
         self.transform_fn = transform_fn
         self.normalize_fn = normalize_fn
@@ -83,7 +83,6 @@ class PairedDataset(Dataset):
         jobs = tqdm(jobs, desc='preloading images', disable=not self.verbose)
         return Parallel(n_jobs=cpu_count(), backend='threading')(jobs)
 
-    # 静态方法可以实现实例化使用 C().f()，当然也可以不实例化调用该方法 C.f()
     @staticmethod
     def _preload(x: str, preload_size: int):
         img = _read_img(x)
@@ -106,21 +105,19 @@ class PairedDataset(Dataset):
         return len(self.data_a)
 
     def __getitem__(self, idx):
-        a, b = self.data_a[idx], self.data_b[idx]
+        a, b = self.data_a[idx], self.data_b[idx]   # a: /media/cxq/Elements/dataset/GOPRO/train/GOPR0372_07_00/blur/000076.png  b: /media/cxq/Elements/dataset/GOPRO/train/GOPR0372_07_00/blur/000076.png
         if not self.preload:
-            a, b = map(_read_img, (a, b))
-        a, b = self.transform_fn(a, b)
+            a, b = map(_read_img, (a, b))  # (720,1280,3), (720,1280,3)
+        a, b = self.transform_fn(a, b)  # (256,256,3), (256,256,3)
         if self.corrupt_fn is not None:
             a = self.corrupt_fn(a)
-        a, b = self._preprocess(a, b)
+        a, b = self._preprocess(a, b)  # (3,256,256), (3,256,256)
         return {'a': a, 'b': b}
 
     @staticmethod
     def from_config(config):
         config = deepcopy(config)
-        # files_a应该是文件夹的路径
         files_a, files_b = map(lambda x: sorted(glob(config[x], recursive=True)), ('files_a', 'files_b'))
-        # 数据增强
         transform_fn = aug.get_transforms(size=config['size'], scope=config['scope'], crop=config['crop'])
         normalize_fn = aug.get_normalize()
         corrupt_fn = aug.get_corrupt_function(config['corrupt'])
@@ -128,20 +125,17 @@ class PairedDataset(Dataset):
         hash_fn = hash_from_paths
         # ToDo: add more hash functions
         verbose = config.get('verbose', True)
-        # 采样一部分图片
         data = subsample(data=zip(files_a, files_b),
                          bounds=config.get('bounds', (0, 1)),
                          hash_fn=hash_fn,
-                         verbose=verbose)  # (42,2) ndarray类型， 里面保存的是成对图片的路径
+                         verbose=verbose)   # (258,2)
 
-        # files_a : ['/media/../blur/000061.png',.....'/media/.../blur_gamma/000061.png',.....'/media/.../sharp/000061.png']
-        # files_b : ['/media/../blur/000061.png',.....'/media/.../blur_gamma/000061.png',.....'/media/.../sharp/000061.png']
-        files_a, files_b = map(list, zip(*data))  # 保存采样后图片对应的路径
+        files_a, files_b = map(list, zip(*data))
 
         return PairedDataset(files_a=files_a,
                              files_b=files_b,
-                             preload=config['preload'],
-                             preload_size=config['preload_size'],
+                             preload=config['preload'],  # False
+                             preload_size=config['preload_size'],  # 0
                              corrupt_fn=corrupt_fn,
                              normalize_fn=normalize_fn,
                              transform_fn=transform_fn,
