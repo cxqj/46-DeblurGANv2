@@ -19,7 +19,7 @@ class GANFactory:
         if gan_id not in GANFactory.factories:
             GANFactory.factories[gan_id] = \
                 eval(gan_id + '.Factory()')
-        return GANFactory.factories[gan_id].create(net_d, criterion)
+        return GANFactory.factories[gan_id].create(net_d, criterion)   # 调用DoubleGAN的create函数
 
     create_model = staticmethod(create_model)
 
