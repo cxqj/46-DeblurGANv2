@@ -18,7 +18,7 @@ import aug
 
 def subsample(data: Iterable, bounds: Tuple[float, float], hash_fn: Callable, n_buckets=100, salt='', verbose=True):
     data = list(data)  # 300x2(一对图片)
-    buckets = split_into_buckets(data, n_buckets=n_buckets, salt=salt, hash_fn=hash_fn)
+    buckets = split_into_buckets(data, n_buckets=n_buckets, salt=salt, hash_fn=hash_fn)  # 相当于为每个样本生成一个编号
 
     lower_bound, upper_bound = [x * n_buckets for x in bounds]   # 0， 90.0
     msg = f'Subsampling buckets from {lower_bound} to {upper_bound}, total buckets number is {n_buckets}'
@@ -26,7 +26,7 @@ def subsample(data: Iterable, bounds: Tuple[float, float], hash_fn: Callable, n_
         msg += f'; salt is {salt}'
     if verbose:
         logger.info(msg)
-    return np.array([sample for bucket, sample in zip(buckets, data) if lower_bound <= bucket < upper_bound])
+    return np.array([sample for bucket, sample in zip(buckets, data) if lower_bound <= bucket < upper_bound])  # 采样编号位于0-90的样本
 
 
 def hash_from_paths(x: Tuple[str, str], salt: str = '') -> str:
