@@ -13,7 +13,7 @@ import yaml
 from joblib import cpu_count
 from torch.utils.data import DataLoader
 
-from adversarial_trainer import GANFactory  # 生成GAN模型的
+from adversarial_atrainer import GANFactory  # 生成GAN模型的
 from dataset import PairedDataset
 from metric_counter import MetricCounter    
 from models.losses import get_loss    # 损失函数
