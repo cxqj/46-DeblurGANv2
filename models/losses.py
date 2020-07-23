@@ -74,8 +74,8 @@ class PerceptualLoss():
         f_fake = self.contentFunc.forward(fakeIm)  # (1,256,64,64)
         f_real = self.contentFunc.forward(realIm)  # (1,256,64,64)
         f_real_no_grad = f_real.detach()
-        loss = self.criterion(f_fake, f_real_no_grad)
-        return 0.006 * torch.mean(loss) + 0.5 * nn.MSELoss()(fakeIm, realIm)
+        loss = self.criterion(f_fake, f_real_no_grad)  # 101.6958  content loss
+        return 0.006 * torch.mean(loss) + 0.5 * nn.MSELoss()(fakeIm, realIm)   # pixel loss
 
     def __call__(self, fakeIm, realIm):
         return self.get_loss(fakeIm, realIm)
@@ -265,35 +265,35 @@ class DiscLossWGANGP(DiscLossLS):   # global patch
         self.D_fake = net.forward(fakeB)  # (1,3,256,256)-->(1,1,35,35),(1,1,11,11)
         return -self.D_fake.mean()
 
-    def calc_gradient_penalty(self, netD, real_data, fake_data):
-        alpha = torch.rand(1, 1)
-        alpha = alpha.expand(real_data.size())
+    def calc_gradient_penalty(self, netD, real_data, fake_data):  # (1,3,256,256),(1,3,256,256)
+        alpha = torch.rand(1, 1)  # 0.6493
+        alpha = alpha.expand(real_data.size())  # (1,1)-->(1,3,256,256)
         alpha = alpha.cuda()
 
-        interpolates = alpha * real_data + ((1 - alpha) * fake_data)
+        interpolates = alpha * real_data + ((1 - alpha) * fake_data)  # (1,3,256,256)
 
         interpolates = interpolates.cuda()
         interpolates = Variable(interpolates, requires_grad=True)
 
-        disc_interpolates = netD.forward(interpolates)
+        disc_interpolates = netD.forward(interpolates)  # (1,1,35,35)
 
         gradients = autograd.grad(outputs=disc_interpolates, inputs=interpolates,
                                   grad_outputs=torch.ones(disc_interpolates.size()).cuda(),
-                                  create_graph=True, retain_graph=True, only_inputs=True)[0]
+                                  create_graph=True, retain_graph=True, only_inputs=True)[0]  # (1,3,256,256)
 
-        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * self.LAMBDA
+        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * self.LAMBDA  # 7.07
         return gradient_penalty
 
-    def get_loss(self, net, fakeB, realB):
-        self.D_fake = net.forward(fakeB.detach())
-        self.D_fake = self.D_fake.mean()
+    def get_loss(self, net, fakeB, realB):  # net : patch_d / full_d   fakeB: (1,3,256,256)  realB: (1,3,256,256)
+        self.D_fake = net.forward(fakeB.detach())  # patch:(1,1,35,35) full: (1,1,11,11)
+        self.D_fake = self.D_fake.mean()  # -0.0319
 
         # Real
-        self.D_real = net.forward(realB)
-        self.D_real = self.D_real.mean()
+        self.D_real = net.forward(realB)  # (1,1,35,35)
+        self.D_real = self.D_real.mean()  # -0.0208
         # Combined loss
-        self.loss_D = self.D_fake - self.D_real
-        gradient_penalty = self.calc_gradient_penalty(net, realB.data, fakeB.data)
+        self.loss_D = self.D_fake - self.D_real  # -0.0111
+        gradient_penalty = self.calc_gradient_penalty(net, realB.data, fakeB.data) # 7.6530
         return self.loss_D + gradient_penalty
 
 """
