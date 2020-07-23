@@ -102,7 +102,7 @@ class FPNInception(nn.Module):
     def unfreeze(self):
         self.fpn.unfreeze()
 
-    def forward(self, x):
+    def forward(self, x):  # x : (1,3,256,256)
         """
           map0: (1,128,128,128)
           map1: (1,256,64,64)
@@ -1284,32 +1284,35 @@ class FPN(nn.Module):
         for param in self.inception.parameters():
             param.requires_grad = True
 
-    def forward(self, x):
+    def forward(self, x):  # (1,3,256,256)
 
         # Bottom-up pathway, from ResNet
-        enc0 = self.enc0(x)
+        enc0 = self.enc0(x)    # (1,32,127,127)
 
-        enc1 = self.enc1(enc0) # 256
+        enc1 = self.enc1(enc0) # (1,64,62,62)
 
-        enc2 = self.enc2(enc1) # 512
+        enc2 = self.enc2(enc1) # (1,192,29,29)
 
-        enc3 = self.enc3(enc2) # 1024
+        enc3 = self.enc3(enc2) # (1,1088,14,14)
 
-        enc4 = self.enc4(enc3) # 2048
+        enc4 = self.enc4(enc3) # (1,2080,6,6)
 
         # Lateral connections
 
-        lateral4 = self.pad(self.lateral4(enc4))
-        lateral3 = self.pad(self.lateral3(enc3))
-        lateral2 = self.lateral2(enc2)
-        lateral1 = self.pad(self.lateral1(enc1))
-        lateral0 = self.lateral0(enc0)
+        lateral4 = self.pad(self.lateral4(enc4))  # (1,2088,6,6)-->(1,256,8,8)
+        lateral3 = self.pad(self.lateral3(enc3))  # (1,1088,14,14)-->(1,256,16,16)
+        lateral2 = self.lateral2(enc2)   # (1,192,29,29)-->(1,256,29,29)
+        lateral1 = self.pad(self.lateral1(enc1))  # (1,64,62,62)-->(1,256,64,64)
+        lateral0 = self.lateral0(enc0)  # (1,32,127,127)-->(1,128,127,127)
 
         # Top-down pathway
         pad = (1, 2, 1, 2)  # pad last dim by 1 on each side
         pad1 = (0, 1, 0, 1)
-        map4 = lateral4
-        map3 = self.td1(lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest"))
-        map2 = self.td2(F.pad(lateral2, pad, "reflect") + nn.functional.upsample(map3, scale_factor=2, mode="nearest"))
-        map1 = self.td3(lateral1 + nn.functional.upsample(map2, scale_factor=2, mode="nearest"))
+        map4 = lateral4  # (1,256,8,8)
+        map3 = self.td1(lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest"))  # (1,256,16,16) + [(1,256,8,8)-->(1,256,16,16)] -- > (1,256,16,16)
+        map2 = self.td2(F.pad(lateral2, pad, "reflect") + nn.functional.upsample(map3, scale_factor=2, mode="nearest"))  # (1,256,32,32)
+        map1 = self.td3(lateral1 + nn.functional.upsample(map2, scale_factor=2, mode="nearest"))  # (1,256,64,64)
         return F.pad(lateral0, pad1, "reflect"), map1, map2, map3, map4
+
+
+
