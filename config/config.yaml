@@ -53,7 +53,7 @@ model:
   dropout: True
 
 num_epochs: 200
-train_batches_per_epoch: 1000
+train_batches_per_epoch: 1000  # 每个epoch使用1000个batch
 val_batches_per_epoch: 100
 batch_size: 1
 image_size: [256, 256]
