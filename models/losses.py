@@ -85,8 +85,8 @@ class GANLoss(nn.Module):
     def __init__(self, use_l1=True, target_real_label=1.0, target_fake_label=0.0,
                  tensor=torch.FloatTensor):
         super(GANLoss, self).__init__()
-        self.real_label = target_real_label
-        self.fake_label = target_fake_label
+        self.real_label = target_real_label   # 真实图片的标签为1
+        self.fake_label = target_fake_label   # 伪造图片的标签为0
         self.real_label_var = None
         self.fake_label_var = None
         self.Tensor = tensor
@@ -193,7 +193,7 @@ class RelativisticDiscLoss(nn.Module):
     def __call__(self, net, fakeB, realB):
         return self.get_loss(net, fakeB, realB)
 
-
+# 论文里用的是这个对抗损失函数
 class RelativisticDiscLossLS(nn.Module):
     def name(self):
         return 'RelativisticDiscLossLS'
@@ -332,4 +332,4 @@ def get_loss(model):
         disc_loss = RelativisticDiscLossLS()
     else:
         raise ValueError("GAN Loss [%s] not recognized." % model['disc_loss'])
-    return content_loss, disc_loss
+    return content_loss, disc_loss  # 内容损失和判别器损失
