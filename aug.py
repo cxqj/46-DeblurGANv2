@@ -62,7 +62,7 @@ def get_transforms(size: int, scope: str = 'geometric', crop='random'):
 
     return process
 
-
+# 函数里面套函数这个写法有点高端
 def get_normalize():
     normalize = albu.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
     normalize = albu.Compose([normalize], additional_targets={'target': 'image'})
@@ -95,7 +95,7 @@ def _resolve_aug_fn(name):
     }
     return d[name]
 
-
+# 裁剪函数
 def get_corrupt_function(config: List[dict]):
     augs = []
     for aug_params in config:
