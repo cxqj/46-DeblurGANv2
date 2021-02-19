@@ -1,13 +1,30 @@
 from typing import List
-
+"""
+albumentations 是一个给予 OpenCV的快速训练数据增强库，拥有非常简单且强大的可以用于多种任务（分割、检测）的接口，易于定制且添加其他框架非常方便。
+它可以对数据集进行逐像素的转换，如模糊、下采样、高斯造点、高斯模糊、动态模糊、RGB转换、随机雾化等；也可以进行空间转换（同时也会对目标进行转换），
+如裁剪、翻转、随机裁剪等。
+"""
 import albumentations as albu
 
 
 def get_transforms(size: int, scope: str = 'geometric', crop='random'):
     augs = {'strong': albu.Compose([albu.HorizontalFlip(),
+                                    """
+                                    随机放射变换（ShiftScaleRotate）
+                                    该方法可以对图片进行平移（translate）、缩放（scale）和旋转（roatate），其含有以下参数：
+                                    shift_limit：图片宽高的平移因子
+                                    scale_limit：图片缩放因子
+                                    rotate_limit：图片旋转范围
+                                    p：使用此转换的概率，默认值为 0.5
+                                    """
                                     albu.ShiftScaleRotate(shift_limit=0.0, scale_limit=0.2, rotate_limit=20, p=.4),
-                                    albu.ElasticTransform(),
-                                    albu.OpticalDistortion(),
+                                    """
+                                    在医学影像问题中非刚体装换可以帮助增强数据。albumentations 中主要提供了以下几种非刚体变换类：
+                                    ElasticTransform、GridDistortion 和 OpticalDistortion。
+                                    """
+                                    albu.ElasticTransform(),  
+                                    albu.OpticalDistortion(), 
+                                    #按照概率P随机执行变换中的一个
                                     albu.OneOf([
                                         albu.CLAHE(clip_limit=2),
                                         albu.IAASharpen(),
@@ -22,6 +39,7 @@ def get_transforms(size: int, scope: str = 'geometric', crop='random'):
                                     ]),
             'weak': albu.Compose([albu.HorizontalFlip(),
                                   ]),
+            # 几何变换
             'geometric': albu.OneOf([albu.HorizontalFlip(always_apply=True),
                                      albu.ShiftScaleRotate(always_apply=True),
                                      albu.Transpose(always_apply=True),
@@ -30,11 +48,12 @@ def get_transforms(size: int, scope: str = 'geometric', crop='random'):
                                      ])
             }
 
-    aug_fn = augs[scope]
+    aug_fn = augs[scope]   # scope = geometric 选取使用的是几何变换
     crop_fn = {'random': albu.RandomCrop(size, size, always_apply=True),
-               'center': albu.CenterCrop(size, size, always_apply=True)}[crop]
+               'center': albu.CenterCrop(size, size, always_apply=True)}[crop]   # crop = random
     pad = albu.PadIfNeeded(size, size)
 
+    # 将以上的aug,crop,pad组合在一起
     pipeline = albu.Compose([aug_fn, crop_fn, pad], additional_targets={'target': 'image'})
 
     def process(a, b):
