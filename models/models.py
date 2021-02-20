@@ -22,12 +22,12 @@ class DeblurModel(nn.Module):
         return image_numpy.astype(imtype)
 
     def get_images_and_metrics(self, inp, output, target) -> (float, float, np.ndarray):
-        inp = self.tensor2im(inp)
-        fake = self.tensor2im(output.data)
-        real = self.tensor2im(target.data)
+        inp = self.tensor2im(inp)  #(256,256,3)
+        fake = self.tensor2im(output.data) #(256,256,3)
+        real = self.tensor2im(target.data) #(256,256,3)
         psnr = PSNR(fake, real)
         ssim = SSIM(fake, real, multichannel=True)
-        vis_img = np.hstack((inp, fake, real))
+        vis_img = np.hstack((inp, fake, real)) #(256,768,3)
         return psnr, ssim, vis_img
 
 
