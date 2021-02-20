@@ -14,7 +14,7 @@ class DeblurModel(nn.Module):
         inputs = img
         targets = data['b']
         inputs, targets = inputs.cuda(), targets.cuda()
-        return inputs, targets
+        return inputs, targets  #(1,3,256,256),(1,3,256,256)
 
     def tensor2im(self, image_tensor, imtype=np.uint8):
         image_numpy = image_tensor[0].cpu().float().numpy()
