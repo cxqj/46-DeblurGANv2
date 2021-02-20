@@ -47,15 +47,15 @@ def test_image(model, image_path):
 		PadIfNeeded(736, 1280)
 	])
 	crop = CenterCrop(720, 1280)
-	img = cv2.imread(image_path)
+	img = cv2.imread(image_path) #(720,1280,3)
 	img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-	img_s = size_transform(image=img)['image']
-	img_tensor = torch.from_numpy(np.transpose(img_s / 255, (2, 0, 1)).astype('float32'))
+	img_s = size_transform(image=img)['image']  #(736,1280,3)
+	img_tensor = torch.from_numpy(np.transpose(img_s / 255, (2, 0, 1)).astype('float32'))  #(3,736,1280)
 	img_tensor = img_transforms(img_tensor)
 	with torch.no_grad():
 		img_tensor = Variable(img_tensor.unsqueeze(0).cuda())
-		result_image = model(img_tensor)
-	result_image = result_image[0].cpu().float().numpy()
+		result_image = model(img_tensor)  #(1,3,736,1280)
+	result_image = result_image[0].cpu().float().numpy()  #(3,736,1280)
 	result_image = (np.transpose(result_image, (1, 2, 0)) + 1) / 2.0 * 255.0
 	result_image = crop(image=result_image)['image']
 	result_image = result_image.astype('uint8')
