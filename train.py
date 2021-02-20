@@ -57,7 +57,7 @@ class Trainer:
                 self.config['experiment_desc'], epoch, self.metric_counter.loss_message()))
 
     def _run_epoch(self, epoch):
-        self.metric_counter.clear()
+        self.metric_counter.clear()  # 重新建立字典
         for param_group in self.optimizer_G.param_groups:
             lr = param_group['lr']
 
@@ -65,10 +65,10 @@ class Trainer:
         tq = tqdm.tqdm(self.train_dataset, total=epoch_size)
         tq.set_description('Epoch {}, lr {}'.format(epoch, lr))
         i = 0
-        for data in tq:
+        for data in tq:  #data:{a:(1,3,256,256) b:(1,3,256,256)}
             inputs, targets = self.model.get_input(data)
-            outputs = self.netG(inputs)
-            loss_D = self._update_d(outputs, targets)
+            outputs = self.netG(inputs)  #(1,3,256,256)
+            loss_D = self._update_d(outputs, targets)  
             self.optimizer_G.zero_grad()
             loss_content = self.criterionG(outputs, targets)
             loss_adv = self.adv_trainer.loss_g(outputs, targets)
