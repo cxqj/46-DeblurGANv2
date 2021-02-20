@@ -22,15 +22,11 @@ class ContentLoss():
     def __call__(self, fakeIm, realIm):
         return self.get_loss(fakeIm, realIm)
 
-
+# content损失，对比的是经过编码后的特征相似度
 class PerceptualLoss():
-
     def contentFunc(self):
         conv_3_3_layer = 14
         cnn = models.vgg19(pretrained=True).features
-        # cnn = models.vgg19(pretrained=False).features
-        # pre = torch.load('/media/lab/7986a4a3-d5ee-4309-abfe-44cc2aad218d/cxq/Year_2020/11-DeblurGANv2/models/vgg19-dcbb9e9d.pth')
-        # cnn.load_state_dict(pre)
         cnn = cnn.cuda()
         model = nn.Sequential()
         model = model.cuda()
@@ -44,25 +40,6 @@ class PerceptualLoss():
     def initialize(self, loss):
         with torch.no_grad():
             self.criterion = loss  # MSE Loss
-            """
-            Sequential(
-                  (0): Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-                  (1): ReLU(inplace=True)
-                  (2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-                  (3): ReLU(inplace=True)
-                  (4): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
-                  (5): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-                  (6): ReLU(inplace=True)
-                  (7): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-                  (8): ReLU(inplace=True)
-                  (9): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
-                  (10): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-                  (11): ReLU(inplace=True)
-                  (12): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-                  (13): ReLU(inplace=True)
-                  (14): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-                )
-            """
             self.contentFunc = self.contentFunc()
             self.transform = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
@@ -75,6 +52,7 @@ class PerceptualLoss():
         f_real = self.contentFunc.forward(realIm)  # (1,256,64,64)
         f_real_no_grad = f_real.detach()
         loss = self.criterion(f_fake, f_real_no_grad)  # 101.6958  content loss
+        # Content_Loss + Pixel_Loss
         return 0.006 * torch.mean(loss) + 0.5 * nn.MSELoss()(fakeIm, realIm)   # pixel loss
 
     def __call__(self, fakeIm, realIm):
@@ -304,7 +282,7 @@ model:
    d_layers: 3
    content_loss: perceptual
    adv_lambda: 0.001
-   disc_loss: wgan-gp
+   disc_loss: ragan_ls
    learn_residual: True
    norm_layer: instance
    dropout: True}
@@ -313,7 +291,7 @@ model:
 def get_loss(model):
     if model['content_loss'] == 'perceptual':
         content_loss = PerceptualLoss()
-        content_loss.initialize(nn.MSELoss())
+        content_loss.initialize(nn.MSELoss())  # Content损失也使用的是MSELoss
     elif model['content_loss'] == 'l1':
         content_loss = ContentLoss()
         content_loss.initialize(nn.L1Loss())
