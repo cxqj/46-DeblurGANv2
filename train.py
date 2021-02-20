@@ -188,3 +188,4 @@ if __name__ == '__main__':
     train, val = map(get_dataloader, datasets)   # 这一步调用了dataset里的from_config方法
     trainer = Trainer(config, train=train, val=val)
     trainer.train()
+    
