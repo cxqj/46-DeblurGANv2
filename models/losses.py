@@ -176,8 +176,8 @@ class RelativisticDiscLoss(nn.Module):
         # Fake
         # stop backprop to the generator by detaching fake_B
         # Generated Image Disc Output should be close to zero
-        self.fake_B = fakeB.detach()
-        self.real_B = realB
+        self.fake_B = fakeB.detach()  #(1,3,256,256)
+        self.real_B = realB  #(1,3,256,256)
         self.pred_fake = net.forward(fakeB.detach())
         self.fake_pool.add(self.pred_fake)
 
@@ -219,8 +219,8 @@ class RelativisticDiscLossLS(nn.Module):
         # Fake
         # stop backprop to the generator by detaching fake_B
         # Generated Image Disc Output should be close to zero
-        self.fake_B = fakeB.detach()
-        self.real_B = realB
+        self.fake_B = fakeB.detach() #(1,3,256,256)
+        self.real_B = realB  #(1,3,256,256)
         self.pred_fake = net.forward(fakeB.detach())
         self.fake_pool.add(self.pred_fake)
 
