@@ -39,64 +39,20 @@ class FPNInception(nn.Module):
         self.fpn = FPN(num_filters=num_filters_fpn, norm_layer=norm_layer)
 
         # The segmentation heads on top of the FPN
-        """
-          FPNHead(
-              (block0): Conv2d(256, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-              (block1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-            )
-        """
         self.head1 = FPNHead(num_filters_fpn, num_filters, num_filters)
-        """
-          FPNHead(
-              (block0): Conv2d(256, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-              (block1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-            )
-        """
         self.head2 = FPNHead(num_filters_fpn, num_filters, num_filters)
-        """
-          FPNHead(
-              (block0): Conv2d(256, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-              (block1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-            )
-        """
         self.head3 = FPNHead(num_filters_fpn, num_filters, num_filters)
-        """
-          FPNHead(
-              (block0): Conv2d(256, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-              (block1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-            )
-        """
         self.head4 = FPNHead(num_filters_fpn, num_filters, num_filters)
-
-        """
-          Sequential(
-              (0): Conv2d(512, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-              (1): InstanceNorm2d(128, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True)
-              (2): ReLU()
-            )
-        """
         self.smooth = nn.Sequential(
             nn.Conv2d(4 * num_filters, num_filters, kernel_size=3, padding=1),
             norm_layer(num_filters),
             nn.ReLU(),
         )
-
-        """
-          Sequential(
-              (0): Conv2d(128, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-              (1): InstanceNorm2d(64, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True)
-              (2): ReLU()
-            )
-        """
         self.smooth2 = nn.Sequential(
             nn.Conv2d(num_filters, num_filters // 2, kernel_size=3, padding=1),
             norm_layer(num_filters // 2),
             nn.ReLU(),
         )
-
-        """
-          Conv2d(64, 3, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        """
         self.final = nn.Conv2d(num_filters // 2, output_ch, kernel_size=3, padding=1)
 
     def unfreeze(self):
@@ -200,7 +156,7 @@ class FPN(nn.Module):
         enc4 = self.enc4(enc3) # (1,2080,6,6)
 
         # Lateral connections
-
+        # lateral用于将所有的特征维度对齐
         lateral4 = self.pad(self.lateral4(enc4))  # (1,2088,6,6)-->(1,256,8,8)
         lateral3 = self.pad(self.lateral3(enc3))  # (1,1088,14,14)-->(1,256,16,16)
         lateral2 = self.lateral2(enc2)   # (1,192,29,29)-->(1,256,29,29)
@@ -211,6 +167,7 @@ class FPN(nn.Module):
         pad = (1, 2, 1, 2)  # pad last dim by 1 on each side
         pad1 = (0, 1, 0, 1)
         map4 = lateral4  # (1,256,8,8)
+        # td1操作是为了消除相加后的混叠效应
         map3 = self.td1(lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest"))  # (1,256,16,16) + [(1,256,8,8)-->(1,256,16,16)] -- > (1,256,16,16)
         map2 = self.td2(F.pad(lateral2, pad, "reflect") + nn.functional.upsample(map3, scale_factor=2, mode="nearest"))  # (1,256,32,32)
         map1 = self.td3(lateral1 + nn.functional.upsample(map2, scale_factor=2, mode="nearest"))  # (1,256,64,64)
