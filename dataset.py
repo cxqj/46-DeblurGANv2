@@ -96,7 +96,7 @@ class PairedDataset(Dataset):
             assert min(img.shape[:2]) >= preload_size, f'weird img shape: {img.shape}'
         return img
 
-    def _preprocess(self, img, res):
+    def _preprocess(self, img, res):  #通道转换
         def transpose(x):
             return np.transpose(x, (2, 0, 1))
 
