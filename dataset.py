@@ -106,7 +106,7 @@ class PairedDataset(Dataset):
         return len(self.data_a)
 
     def __getitem__(self, idx):
-        a, b = self.data_a[idx], self.data_b[idx]   # a: /media/cxq/Elements/dataset/GOPRO/train/GOPR0372_07_00/blur/000076.png  b: /media/cxq/Elements/dataset/GOPRO/train/GOPR0372_07_00/blur/000076.png
+        a, b = self.data_a[idx], self.data_b[idx]   # a: /media/cxq/Elements/dataset/GOPRO/train/GOPR0372_07_00/blur/000076.png  b: /media/cxq/Elements/dataset/GOPRO/train/GOPR0372_07_00/sharp/000076.png
         if not self.preload:
             a, b = map(_read_img, (a, b))  # (720,1280,3), (720,1280,3)
         a, b = self.transform_fn(a, b)  # (256,256,3), (256,256,3)
