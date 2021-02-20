@@ -311,3 +311,4 @@ def get_loss(model):
     else:
         raise ValueError("GAN Loss [%s] not recognized." % model['disc_loss'])
     return content_loss, disc_loss  # 内容损失和判别器损失
+
